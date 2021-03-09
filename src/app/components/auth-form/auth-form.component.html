@@ -1,0 +1,32 @@
+<div *ngIf="!firebaseService.isLoggedIn">
+  <div class="container">
+    <div class="sign-in">
+      <h2>Sign in</h2>
+      <form [formGroup]="signInForm" (ngSubmit)="onSignIn()">
+        <label>Email</label>
+        <input type="text" formControlName="email" required />
+
+        <label>Password</label>
+        <input type="password" formControlName="password" required />
+
+        <button type="submit" [disabled]="!signInForm.valid">Sign In</button>
+      </form>
+    </div>
+    <div class="sign-up">
+      <h2>Sign up</h2>
+      <form [formGroup]="signUpForm" (ngSubmit)="onSignUp()">
+        <label>Email</label>
+        <input type="text" formControlName="email" required />
+
+        <label>Password</label>
+        <input type="password" formControlName="password" required />
+
+        <label>Name</label>
+        <input type="text" formControlName="name" required />
+
+        <button type="submit" [disabled]="!signUpForm.valid">Sign Up</button>
+      </form>
+    </div>
+    <button (click)="onGoogleSignIn()">Google</button>
+  </div>
+</div>
