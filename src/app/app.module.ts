@@ -47,7 +47,7 @@ import { EffectsModule } from '@ngrx/effects';
     HttpClientInMemoryWebApiModule.forRoot(InMemoryCustomDbService,{dataEncapsulation: false}),
     AppStoreModule,
     StoreDevtoolsModule.instrument({ maxAge: 25, logOnly: environment.production }),
-    //EffectsModule.forRoot([]),
+    EffectsModule.forRoot([]),
     ReactiveFormsModule,
     !environment.production ? StoreDevtoolsModule.instrument() : [],
   ],

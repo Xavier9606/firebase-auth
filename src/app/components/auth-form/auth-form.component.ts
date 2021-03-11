@@ -35,31 +35,41 @@ export class AuthFormComponent implements OnInit {
     name: new FormControl('', [Validators.required, Validators.minLength(5)]),
   });
 
-  async onSignUp() {
-    await this.firebaseService.singUp(
-      this.signUpForm.value.email,
-      this.signUpForm.value.password,
-      this.signUpForm.value.name
-    );
-    if (this.firebaseService.isLoggedIn) {
-      this.router.navigate(['/home']);
-    }
+  onSignUp() {
+    this.firebaseService
+      .signUp(
+        this.signUpForm.value.email,
+        this.signUpForm.value.password,
+        this.signUpForm.value.name
+      )
+      .subscribe(() => {
+        if (this.firebaseService.isLoggedIn) {
+          this.router.navigate(['/home']);
+        }
+      });
   }
 
-  async onSignIn() {
-    await this.firebaseService.singIn(
-      this.signInForm.value.email,
-      this.signInForm.value.password
-    );
-    if (this.firebaseService.isLoggedIn) {
-      this.router.navigate(['/home']);
-    }
+  onSignIn() {
+    this.firebaseService
+      .signIn(this.signInForm.value.email, this.signInForm.value.password)
+      .subscribe(() => {
+        if (this.firebaseService.isLoggedIn) {
+          this.router.navigate(['/home']);
+        }
+      });
   }
 
-  async onGoogleSignIn() {
-    await this.firebaseService.createUserViaGoogle();
-    if (this.firebaseService.isLoggedIn) {
-      this.router.navigate(['/home']);
-    }
+  onGoogleSignIn() {
+    this.firebaseService.signInViaGoogle().subscribe(() => {
+      if (this.firebaseService.isLoggedIn) {
+        this.router.navigate(['/home']);
+      }
+    });
+  }
+
+  getCurrentUser() {
+    this.firebaseService.getCurrentUser().subscribe((user) => {
+      console.log(user);
+    });
   }
 }

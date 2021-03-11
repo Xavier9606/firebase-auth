@@ -1,8 +1,16 @@
 import { Injectable } from '@angular/core';
 import { AngularFireAuth } from '@angular/fire/auth';
 import firebase from 'firebase/app';
-import { Observable, of, pipe } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { from, Observable, of } from 'rxjs';
+import {
+  map,
+  catchError,
+  filter,
+  take,
+  switchMap,
+  mergeMap,
+  exhaustMap,
+} from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root',
@@ -11,74 +19,114 @@ export class FirebaseService {
   isLoggedIn = localStorage.getItem('user') !== null;
   constructor(public firebaseAuth: AngularFireAuth) {}
 
-  async singIn(email: string, password: string) {
-    await this.firebaseAuth
-      .signInWithEmailAndPassword(email, password)
-      .then((res) => {
-        this.isLoggedIn = true;
-        localStorage.setItem('user', JSON.stringify(res.user));
-      })
-      .catch((error) => {
-        this.isLoggedIn = false;
-        console.error(error.message);
-      });
+  signIn(email: string, password: string): Observable<any> {
+    return from(
+      this.firebaseAuth.signInWithEmailAndPassword(email, password)
+    ).pipe(
+      switchMap((userCred) =>
+        this.getToken().pipe(
+          take(1),
+          map((token) => {
+            this.isLoggedIn = true;
+            localStorage.setItem('user', JSON.stringify(userCred.user));
+            localStorage.setItem(
+              'userToken',
+              JSON.stringify({ token: token, expire: '99999999' })
+            );
+          }),
+          catchError((err) => of({ error: err }))
+        )
+      )
+    );
   }
-  async singUp(email: string, password: string, name: string) {
-    await this.firebaseAuth
-      .createUserWithEmailAndPassword(email, password)
-      .then((res) => {
-        this.updateUserDisplayName(name);
-        this.isLoggedIn = true;
-      })
-      .catch((error) => {
-        this.isLoggedIn = false;
-        console.error(error.message);
-      });
+
+  signInViaGoogle(): Observable<any> {
+    return from(
+      this.firebaseAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+    ).pipe(
+      switchMap(() =>
+        from(
+          this.firebaseAuth.signInWithPopup(
+            new firebase.auth.GoogleAuthProvider()
+          )
+        ).pipe(
+          switchMap((userCred) =>
+            this.getToken().pipe(
+              take(1),
+              map((token) => {
+                this.isLoggedIn = true;
+                localStorage.setItem('user', JSON.stringify(userCred.user));
+                localStorage.setItem(
+                  'userToken',
+                  JSON.stringify({ token: token, expire: '99999999' })
+                );
+              }),
+              catchError((err) => of({ error: err }))
+            )
+          )
+        )
+      )
+    );
   }
-  async logOut() {
-    await this.firebaseAuth
-      .signOut()
-      .then((res) => {
+
+  signUp(email: string, password: string, name: string): Observable<any> {
+    return from(
+      this.firebaseAuth.createUserWithEmailAndPassword(email, password)
+    ).pipe(
+      switchMap((userCred) =>
+        from(this.updateUserDisplayName(name)).pipe(
+          switchMap(() =>
+            this.getToken().pipe(
+              take(1),
+              map((token) => {
+                this.isLoggedIn = true;
+                localStorage.setItem('user', JSON.stringify(userCred.user));
+                localStorage.setItem(
+                  'userToken',
+                  JSON.stringify({ token: token, expire: '99999999' })
+                );
+              }),
+              catchError((err) => of({ error: err }))
+            )
+          )
+        )
+      )
+    );
+  }
+
+  signOut(): Observable<any> {
+    return from(this.firebaseAuth.signOut()).pipe(
+      map(() => {
         this.isLoggedIn = false;
+        localStorage.removeItem('userToken');
         localStorage.removeItem('user');
-      })
-      .catch((error) => {
-        this.isLoggedIn = true;
-        console.error(error.message);
-      });
+      }),
+      catchError((err) => of({ error: err }))
+    );
   }
 
-  async createUserViaGoogle() {
-    await this.firebaseAuth
-      .signInWithPopup(new firebase.auth.GoogleAuthProvider())
-      .then((res) => {
-        this.isLoggedIn = true;
-        localStorage.setItem('user', JSON.stringify(res.user));
-      })
-      .catch((error) => {
-        this.isLoggedIn = false;
-        console.error(error.message);
-      });
+  private updateUserDisplayName(name: string): Observable<any> {
+    return this.getCurrentUser().pipe(
+      exhaustMap((user: firebase.User) =>
+        from(user.updateProfile({ displayName: name })).pipe(
+          catchError((err) => of({ error: err }))
+        )
+      )
+    );
   }
 
-  async updateUserDisplayName(name: string) {
-    let user = firebase.auth().currentUser;
-    await user
-      .updateProfile({
-        displayName: name,
-      })
-      .then(() => {
-        localStorage.setItem('user', JSON.stringify(user));
-      })
-      .catch((error) => {
-        console.error(error.message);
-      });
+  getCurrentUser(): Observable<any> {
+    return from(this.firebaseAuth.currentUser);
   }
 
-  getCurrentUser() {
-    return this.isLoggedIn ? JSON.parse(localStorage.getItem('user')) : null;
+  getToken(): Observable<any> {
+    return this.firebaseAuth.idToken;
   }
-  getCurrentUserRemote() {
-    return this.firebaseAuth.currentUser;
+
+  getAuthProvider(): Observable<string> {
+    return this.getCurrentUser().pipe(
+      filter((user) => user !== null),
+      map((user) => user.providerData[0].providerId)
+    );
   }
 }
