@@ -13,8 +13,8 @@ export const getUser = createSelector(selectUserState, (state) =>
   state ? state.user : null
 );
 
-export const getLoggedIn = createSelector(selectUserState, (state) =>
-  state ? state.token : null
+export const getSignedIn = createSelector(selectUserState, (state) =>
+  state ? state.signedIn : null
 );
 
 export const getAuthProvidedBy = createSelector(selectUserState, (state) =>

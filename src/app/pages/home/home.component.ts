@@ -1,8 +1,9 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FirebaseService } from 'src/app/services/firebase.service';
 import { Router } from '@angular/router';
-import { filter, map, take } from 'rxjs/operators';
-import { Observable } from 'rxjs';
+import { Store } from '@ngrx/store';
+import * as UserActions from '../../store/app-store/user/user.actions';
+import * as fromUser from '../../store/app-store/user/user.selectors';
 
 @Component({
   selector: 'app-home',
@@ -14,33 +15,23 @@ export class HomeComponent implements OnInit {
 
   constructor(
     public firebaseService: FirebaseService,
-    private router: Router
+    private router: Router,
+    private store: Store
   ) {}
 
   ngOnInit(): void {
-    if (!this.firebaseService.isLoggedIn) this.router.navigate(['/auth']);
-    //this.currentUserName = this.getCurrentUserName();
-    //this.currentUserName=this.firebaseService.getCurrentUser().pipe(filter(res=>res!==null),map(user=>user.displayName));
-    this.firebaseService.getCurrentUser().subscribe((res) => {
-      //console.log(res);
-      this.currentUserName = res.displayName;
+    this.store.select(fromUser.getSignedIn).subscribe((loggedIn) => {
+      loggedIn ? null : this.router.navigate(['/auth']);
+
+      this.firebaseService.getToken().subscribe(token=>console.log(token))
     });
-    // this.firebaseService.getAuthProvider().pipe(take(1)).subscribe((provider)=>console.log(provider));
-  }
 
-  getCurrentUserName() {
-    //return this.firebaseService.getCurrentUser().displayName;
-  }
-
-  getCurrentUser() {
-    this.firebaseService.getCurrentUser().subscribe((user) => {
-      console.log(user);
+    this.store.select(fromUser.getUser).subscribe((user) => {
+      user ? (this.currentUserName = user.displayName) : null;
     });
   }
 
   signOut() {
-    this.firebaseService
-      .signOut()
-      .subscribe(() => this.router.navigate(['/auth']));
+    this.store.dispatch(UserActions.signOut());
   }
 }

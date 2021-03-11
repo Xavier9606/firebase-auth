@@ -2,6 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { FirebaseService } from 'src/app/services/firebase.service';
 import { Router } from '@angular/router';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { Store } from '@ngrx/store';
+import * as UserActions from '../../store/app-store/user/user.actions';
+import * as fromUser from '../../store/app-store/user/user.selectors';
 
 @Component({
   selector: 'app-auth-form',
@@ -11,11 +14,16 @@ import { FormControl, FormGroup, Validators } from '@angular/forms';
 export class AuthFormComponent implements OnInit {
   constructor(
     public firebaseService: FirebaseService,
-    private router: Router
+    private router: Router,
+    private store: Store
   ) {}
 
   ngOnInit(): void {
-    if (this.firebaseService.isLoggedIn) this.router.navigate(['/home']);
+    this.store.select(fromUser.getSignedIn).subscribe((isLoggedIn) => {
+      isLoggedIn ? this.router.navigate(['/home']) : null;
+    });
+    this.firebaseService.getCurrentUserInfo().subscribe((ui)=>console.log(ui))
+    this.firebaseService.getCurrentUser().subscribe((u)=>console.log(u))
   }
 
   signInForm = new FormGroup({
@@ -36,40 +44,14 @@ export class AuthFormComponent implements OnInit {
   });
 
   onSignUp() {
-    this.firebaseService
-      .signUp(
-        this.signUpForm.value.email,
-        this.signUpForm.value.password,
-        this.signUpForm.value.name
-      )
-      .subscribe(() => {
-        if (this.firebaseService.isLoggedIn) {
-          this.router.navigate(['/home']);
-        }
-      });
+    this.store.dispatch(UserActions.signUp({ input: this.signUpForm.value }));
   }
 
   onSignIn() {
-    this.firebaseService
-      .signIn(this.signInForm.value.email, this.signInForm.value.password)
-      .subscribe(() => {
-        if (this.firebaseService.isLoggedIn) {
-          this.router.navigate(['/home']);
-        }
-      });
+    this.store.dispatch(UserActions.signIn({ input: this.signInForm.value }));
   }
 
   onGoogleSignIn() {
-    this.firebaseService.signInViaGoogle().subscribe(() => {
-      if (this.firebaseService.isLoggedIn) {
-        this.router.navigate(['/home']);
-      }
-    });
-  }
-
-  getCurrentUser() {
-    this.firebaseService.getCurrentUser().subscribe((user) => {
-      console.log(user);
-    });
+    this.store.dispatch(UserActions.signInViaSocial());
   }
 }

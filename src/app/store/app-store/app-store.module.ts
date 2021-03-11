@@ -15,7 +15,7 @@ import { UserEffects } from './user/user.effects';
   declarations: [],
   imports: [
     CommonModule,
-    EffectsModule.forRoot([UserEffects]),
+    EffectsModule.forFeature([UserEffects]),
     !environment.production ? StoreDevtoolsModule.instrument() : [],
     StoreModule.forRoot(reducers,{metaReducers})
   ]

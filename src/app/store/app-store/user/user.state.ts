@@ -2,16 +2,16 @@ export const userFeatureKey = 'user';
 
 export interface State {
   token: string;
-  user: object;
-  loggedIn: boolean;
+  user: any;
+  signedIn: boolean;
   authProvidedBy: string;
-  lastErrorMessage: string;
+  lastErrorMessage: any;
 }
 
 export const initialState: State = {
   token: '',
   user: {},
-  loggedIn: false,
+  signedIn: false,
   authProvidedBy: '',
-  lastErrorMessage: '',
+  lastErrorMessage: null,
 };
